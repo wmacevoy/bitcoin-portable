@@ -27,19 +27,6 @@ then
     mv "$at/$dir.in-progress" "$at/$dir"	
 fi
 
-if [ ! -x "$at/bitcoin-$BITCOIN_CORE_OS" ]
-then
-    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"
-    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS.in-progress"
-    cat >"$at/bitcoin-$BITCOIN_CORE_OS.in-progress" <<EOF
-#!/bin/bash
-at="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")"; pwd)"
-exec \$at/$dir/bin/bitcoin-qt -datadir="\$at/data"
-EOF
-    chmod +x "$at/bitcoin-$BITCOIN_CORE_OS.in-progress"
-    mv "$at/bitcoin-$BITCOIN_CORE_OS.in-progress" "$at/bitcoin-$BITCOIN_CORE_OS"
-fi
-
 mkdir -p "$at/data"
 
 
