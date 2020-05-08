@@ -7,34 +7,40 @@ src="$BITCOIN_CORE_URL"
 dir="bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS"
 tgz="$dir.tar.gz"
 
-if [ ! -f "$at/$tgz" ]
+if [ ! -r "$at/$tgz" ]
 then
-	/bin/rm -rf "$at/$tgz.in-progress"
-	curl -o "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
-	mv "$at/$tgz.in-progress" "$at/$tgz"
+    /bin/rm -rf "$at/$tgz"
+    /bin/rm -rf "$at/$tgz.in-progress"
+    /bin/rm -rf "$at/$dir"
+    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"    
+    curl -o "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
+    mv "$at/$tgz.in-progress" "$at/$tgz"
 fi
 
 if [ ! -d "$at/$dir" ]
 then
-	/bin/rm -rf "$at/$dir"
-	/bin/rm -rf "$at/$dir.in-progress"	
-	mkdir -p "$at/$dir.in-progress"
-	tar --strip-components=1 -zvxf "$at/$tgz" -C "$at/$dir.in-progress"
-	mv "$at/$dir.in-progress" "$at/$dir"	
+    /bin/rm -rf "$at/$dir"
+    /bin/rm -rf "$at/$dir.in-progress"
+    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"    
+    mkdir -p "$at/$dir.in-progress"
+    tar --strip-components=1 -zvxf "$at/$tgz" -C "$at/$dir.in-progress"
+    mv "$at/$dir.in-progress" "$at/$dir"	
 fi
 
-if [ ! -x "$at/bitcoin" ]
+if [ ! -x "$at/bitcoin-$BITCOIN_CORE_OS" ]
 then
-	/bin/rm -rf "$at/bitcoin"
-	/bin/rm -rf "$at/bitcoin.in-progress"
-	cat >"$at/bitcoin.in-progress" <<EOF
+    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"
+    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS.in-progress"
+    cat >"$at/bitcoin-$BITCOIN_CORE_OS.in-progress" <<EOF
 #!/bin/bash
 at="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")"; pwd)"
-exec \$at/bin/bitcoin-qt -datadir="\$at/data"
+exec \$at/$dir/bin/bitcoin-qt -datadir="\$at/data"
 EOF
-	chmod +x "$at/bitcoin.in-progress"
-	mv "$at/bitcoin.in-progress" "$at/bitcoin"
+    chmod +x "$at/bitcoin-$BITCOIN_CORE_OS.in-progress"
+    mv "$at/bitcoin-$BITCOIN_CORE_OS.in-progress" "$at/bitcoin-$BITCOIN_CORE_OS"
 fi
+
+mkdir -p "$at/data"
 
 
 
