@@ -1,0 +1,41 @@
+#!/bin/bash
+
+at="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
+. "$at/config.sh"
+
+src="$BITCOIN_CORE_URL"
+dir="bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS"
+tgz="$dir.tar.gz"
+
+if [ ! -f "$at/$tgz" ]
+then
+	/bin/rm -rf "$at/$tgz.in-progress"
+	curl -o "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
+	mv "$at/$tgz.in-progress" "$at/$tgz"
+fi
+
+if [ ! -d "$at/$dir" ]
+then
+	/bin/rm -rf "$at/$dir"
+	/bin/rm -rf "$at/$dir.in-progress"	
+	mkdir -p "$at/$dir.in-progress"
+	tar --strip-components=1 -zvxf "$at/$tgz" -C "$at/$dir.in-progress"
+	mv "$at/$dir.in-progress" "$at/$dir"	
+fi
+
+if [ ! -x "$at/bitcoin" ]
+then
+	/bin/rm -rf "$at/bitcoin"
+	/bin/rm -rf "$at/bitcoin.in-progress"
+	cat >"$at/bitcoin.in-progress" <<EOF
+#!/bin/bash
+at="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")"; pwd)"
+exec \$at/bin/bitcoin-qt -datadir="\$at/data"
+EOF
+	chmod +x "$at/bitcoin.in-progress"
+	mv "$at/bitcoin.in-progress" "$at/bitcoin"
+fi
+
+
+
+
