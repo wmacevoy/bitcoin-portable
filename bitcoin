@@ -1,6 +1,10 @@
 #!/bin/bash
 at="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 . "$at/config.sh"
-exec "$at/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS/bin/bitcoin-qt" -datadir="$at/data"
+if [ ! -x "$BITCOIN_CORE_EXECUTABLE" ]
+then
+    "$at/setup"
+fi
+exec "$BITCOIN_CORE_EXECUTABLE" -datadir="$at/data"
 
 

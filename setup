@@ -9,26 +9,38 @@ tgz="$dir.tar.gz"
 
 if [ ! -r "$at/$tgz" ]
 then
+    echo "downloading $at/$tgz..."
     /bin/rm -rf "$at/$tgz"
     /bin/rm -rf "$at/$tgz.in-progress"
     /bin/rm -rf "$at/$dir"
-    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"    
-    curl -o "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
+    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"
+    if which curl > /dev/null
+    then
+	curl -o "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
+    elif which wget > /dev/null
+    then
+	wget -O "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
+    else
+	echo "cannot download bitcoin core - install curl or wget"
+	exit 1
+    fi
+	    
     mv "$at/$tgz.in-progress" "$at/$tgz"
+    echo "$at/$tgz downloaded."
 fi
 
 if [ ! -d "$at/$dir" ]
 then
+    echo "extracting to $at/$dir..."
     /bin/rm -rf "$at/$dir"
     /bin/rm -rf "$at/$dir.in-progress"
     /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"    
     mkdir -p "$at/$dir.in-progress"
-    tar --strip-components=1 -zvxf "$at/$tgz" -C "$at/$dir.in-progress"
-    mv "$at/$dir.in-progress" "$at/$dir"	
+    tar --strip-components=1 -zxf "$at/$tgz" -C "$at/$dir.in-progress"
+    mv "$at/$dir.in-progress" "$at/$dir"
+    echo "$at/$dir extracted."
 fi
 
 mkdir -p "$at/data"
-
-
 
 
