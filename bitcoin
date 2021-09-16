@@ -5,6 +5,6 @@ if [ ! -x "$BITCOIN_CORE_EXECUTABLE" ]
 then
     "$at/setup"
 fi
-exec "$BITCOIN_CORE_EXECUTABLE" -datadir="$at/data"
+exec "$BITCOIN_CORE_EXECUTABLE" -datadir="$at/data" "$@"
 
 
