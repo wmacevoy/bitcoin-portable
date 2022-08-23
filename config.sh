@@ -12,6 +12,6 @@ else
     exit 1
 fi
 
-BITCOIN_CORE_VERSION=0.21.1
-BITCOIN_CORE_URL=https://bitcoin.org/bin/bitcoin-core-$BITCOIN_CORE_VERSION/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.tar.gz
+BITCOIN_CORE_VERSION=23.0
+BITCOIN_CORE_URL=https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_CORE_VERSION/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.tar.gz
 BITCOIN_CORE_EXECUTABLE="$at/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS/bin/bitcoin-qt"
