@@ -6,28 +6,55 @@ at="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 src="$BITCOIN_CORE_URL"
 dir="bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS"
 tgz="$dir.tar.gz"
+ERR() { 
+    echo "$@" 1>&2
+    exit 1
+}
 
-if [ ! -r "$at/$tgz" ]
-then
-    echo "downloading $at/$tgz..."
-    /bin/rm -rf "$at/$tgz"
-    /bin/rm -rf "$at/$tgz.in-progress"
-    /bin/rm -rf "$at/$dir"
-    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"
+CAT() {
     if which curl > /dev/null
     then
-	curl -o "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
-    elif which wget > /dev/null
-    then
-	wget -O "$at/$tgz.in-progress" "$BITCOIN_CORE_URL"
-    else
-	echo "cannot download bitcoin core - install curl or wget"
-	exit 1
+    	if curl "$@"
+        then
+            return
+        fi
     fi
-	    
-    mv "$at/$tgz.in-progress" "$at/$tgz"
-    echo "$at/$tgz downloaded."
-fi
+    if which wget > /dev/null
+    then
+    	if wget -O - "$@"
+        then
+            return
+        fi
+    fi
+    ERR "CAT $@ failed."
+}
+
+tries=0
+while ! grep -q $tgz "$at/$tgz.sha256" > /dev/null
+do
+    tries=$(($tries + 1))
+    [ $tries -lt 2 ] || ERR "failed to find checksum."
+
+    echo "downloading $at/$tgz.sha256"
+    /bin/rm -rf "$at/$tgz.sha256"
+    CAT "$BITCOIN_CORE_URL_SHA256" \
+        | grep bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.tar.gz \
+        | sed -e "s/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.tar.gz/$tgz/" \
+        > $tgz.sha256
+done
+
+tries=0
+while ! (test -r "$at/$tgz" && cd "$at" && shasum -a 256 -c "$tgz.sha256")
+do
+    tries=$(($tries + 1))
+    [ $tries -lt 2 ] || ERR "failed to download $tgz"
+
+    echo "downloading $at/$tgz..."
+    /bin/rm -rf "$at/$tgz"
+    /bin/rm -rf "$at/$dir"
+    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"
+    CAT "$BITCOIN_CORE_URL" >"$at/$tgz"
+done
 
 if [ ! -d "$at/$dir" ]
 then
@@ -42,5 +69,3 @@ then
 fi
 
 mkdir -p "$at/data"
-
-
