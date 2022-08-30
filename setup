@@ -1,11 +1,6 @@
 #!/bin/bash
 
-at="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
-. "$at/config.sh"
 
-src="$BITCOIN_CORE_URL"
-dir="bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS"
-tgz="$dir.tar.gz"
 ERR() { 
     echo "$@" 1>&2
     exit 1
@@ -29,31 +24,49 @@ CAT() {
     ERR "CAT $@ failed."
 }
 
+at="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+. "$at/config.sh"
+
+src="$BITCOIN_CORE_URL"
+dir="bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS"
+
+if [ "$BITCOIN_CORE_OS" != "win64" ]
+then
+    archive_extension="tar.gz"
+    archive="$dir.tar.gz"
+    archiver=tar
+else
+    archive_extension="zip"
+    archive="$dir.zip"
+    archiver=zip
+fi
+
 tries=0
-while ! grep -q $tgz "$at/$tgz.sha256" > /dev/null
+while ! grep -q $archive "$at/$archive.sha256" > /dev/null
 do
     tries=$(($tries + 1))
     [ $tries -lt 2 ] || ERR "failed to find checksum."
 
-    echo "downloading $at/$tgz.sha256"
-    /bin/rm -rf "$at/$tgz.sha256"
+    echo "downloading $at/$archive.sha256"
+    /bin/rm -rf "$at/$archive.sha256"
     CAT "$BITCOIN_CORE_URL_SHA256" \
-        | grep bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.tar.gz \
-        | sed -e "s/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.tar.gz/$tgz/" \
-        > $tgz.sha256
+        | grep bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.$archive_extension \
+        | sed -e "s/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.$archive_extension/$archive/" \
+        > $archive.sha256
 done
 
 tries=0
-while ! (test -r "$at/$tgz" && cd "$at" && shasum -a 256 -c "$tgz.sha256")
+while ! (test -r "$at/$archive" && cd "$at" && shasum -a 256 -c "$archive.sha256")
 do
     tries=$(($tries + 1))
-    [ $tries -lt 2 ] || ERR "failed to download $tgz"
+    [ $tries -lt 2 ] || ERR "failed to download $archive"
 
-    echo "downloading $at/$tgz..."
-    /bin/rm -rf "$at/$tgz"
+    echo "downloading $at/$archive..."
+    /bin/rm -rf "$at/$archive"
     /bin/rm -rf "$at/$dir"
     /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"
-    CAT "$BITCOIN_CORE_URL" >"$at/$tgz"
+    CAT "$BITCOIN_CORE_URL" >"$at/$archive"
 done
 
 if [ ! -d "$at/$dir" ]
@@ -63,9 +76,17 @@ then
     /bin/rm -rf "$at/$dir.in-progress"
     /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"    
     mkdir -p "$at/$dir.in-progress"
-    tar --strip-components=1 -zxf "$at/$tgz" -C "$at/$dir.in-progress"
-    mv "$at/$dir.in-progress" "$at/$dir"
+    if [ "$archiver" == "tar" ]
+    then
+        tar --strip-components=1 -zxf "$at/$archive" -C "$at/$dir.in-progress"
+        mv "$at/$dir.in-progress" "$at/$dir"
+    else
+        unzip -d "$at/$dir.in-progress" "$at/$archive"
+        mv "$at/$dir.in-progress/bitcoin-$BITCOIN_CORE_VERSION" "$at/$dir"
+        /bin/rm -rf "$at/$dir.in-progress"
+    fi
     echo "$at/$dir extracted."
 fi
 
-mkdir -p "$at/data"
+(cd "$at" && mkdir -p data)
+
