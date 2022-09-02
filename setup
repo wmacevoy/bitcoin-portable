@@ -53,7 +53,7 @@ do
     CAT "$BITCOIN_CORE_URL_SHA256" \
         | grep bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.$archive_extension \
         | sed -e "s/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.$archive_extension/$archive/" \
-        > $archive.sha256
+        > "$at/$archive.sha256"
 done
 
 tries=0
