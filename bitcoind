@@ -1,0 +1,24 @@
+#!/bin/bash
+at="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+. "$at/config.sh"
+if [ ! -x "$BITCOIN_CORE_EXECUTABLE" ]
+then
+    "$at/setup"
+fi
+
+WINPATH() {
+    if which cygpath > /dev/null # git-bash/msys/cygwin
+    then
+       cygpath -w "$@"
+    elif [ -r /proc/version ] && grep -q Microsoft /proc/version
+    then
+	    echo readlink -m "$@" | sed 's|^/mnt/\([a-z]\)|\U\1:|' | sed 's|/|\\|g'
+    else
+	    echo "$@"
+    fi
+}
+
+exec "$BITCOIND_CORE_EXECUTABLE" -datadir="$(WINPATH "$at/data")" "$@"
+
+
