@@ -19,6 +19,9 @@ WINPATH() {
     fi
 }
 
+if which renice > /dev/null
+then
+    renice -n 10 $$
+fi
+
 exec "$BITCOIN_CORE_EXECUTABLE" -datadir="$(WINPATH "$at/data")" "$@"
-
-
