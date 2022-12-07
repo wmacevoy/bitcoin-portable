@@ -1,92 +1,54 @@
 #!/bin/bash
 
+. "$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/config.sh"
 
-ERR() { 
-    echo "$@" 1>&2
-    exit 1
-}
-
-CAT() {
-    if which curl > /dev/null
-    then
-    	if curl "$@"
-        then
-            return
-        fi
-    fi
-    if which wget > /dev/null
-    then
-    	if wget -O - "$@"
-        then
-            return
-        fi
-    fi
-    ERR "CAT $@ failed."
-}
-
-at="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-
-. "$at/config.sh"
-
-src="$BITCOIN_CORE_URL"
-dir="bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS"
-
-if [ "$BITCOIN_CORE_OS" != "win64" ]
-then
-    archive_extension="tar.gz"
-    archive="$dir.tar.gz"
-    archiver=tar
-else
-    archive_extension="zip"
-    archive="$dir.zip"
-    archiver=zip
-fi
+src="$BITCOIN_PORTABLE_URL"
+dir="bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS"
 
 tries=0
-while ! grep -q $archive "$at/$archive.sha256" > /dev/null
+while ! grep -q $BITCOIN_PORTABLE_ARCHIVE "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256" > /dev/null
 do
     tries=$(($tries + 1))
-    [ $tries -lt 2 ] || ERR "failed to find checksum."
+    [ $tries -lt 2 ] || BITCOIN_PORTABLE_ERR "failed to find checksum."
 
-    echo "downloading $at/$archive.sha256"
-    /bin/rm -rf "$at/$archive.sha256"
-    CAT "$BITCOIN_CORE_URL_SHA256" \
-        | grep bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.$archive_extension \
-        | sed -e "s/bitcoin-$BITCOIN_CORE_VERSION-$BITCOIN_CORE_OS.$archive_extension/$archive/" \
-        > "$at/$archive.sha256"
+    echo "downloading $BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
+    /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
+    BITCOIN_PORTABLE_CAT "$BITCOIN_PORTABLE_URL_SHA256" \
+        | grep bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS$BITCOIN_PORTABLE_ARCHIVE_EXTENSION \
+        | sed -e "s/bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS$BITCOIN_PORTABLE_ARCHIVE_EXTENSION/$BITCOIN_PORTABLE_ARCHIVE/" \
+        > "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
 done
 
 tries=0
-while ! (test -r "$at/$archive" && cd "$at" && shasum -a 256 -c "$archive.sha256")
+while ! (test -r "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE" && \
+    cd "$BITCOIN_PORTABLE_DIR" && shasum -a 256 -c "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256" > /dev/null)
 do
     tries=$(($tries + 1))
-    [ $tries -lt 2 ] || ERR "failed to download $archive"
+    [ $tries -lt 2 ] || BITCOIN_PORTABLE_ERR "failed to download $BITCOIN_PORTABLE_ARCHIVE"
 
-    echo "downloading $at/$archive..."
-    /bin/rm -rf "$at/$archive"
-    /bin/rm -rf "$at/$dir"
-    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"
-    CAT "$BITCOIN_CORE_URL" >"$at/$archive"
+    echo "downloading $BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE..."
+    /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE"
+    /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR"
+    BITCOIN_PORTABLE_CAT "$BITCOIN_PORTABLE_URL" >"$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE"
 done
 
-if [ ! -d "$at/$dir" ]
+if [ ! -d "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR" ]
 then
-    echo "extracting to $at/$dir..."
-    /bin/rm -rf "$at/$dir"
-    /bin/rm -rf "$at/$dir.in-progress"
-    /bin/rm -rf "$at/bitcoin-$BITCOIN_CORE_OS"    
-    mkdir -p "$at/$dir.in-progress"
-    if [ "$archiver" == "tar" ]
+    echo "extracting to $BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR..."
+    /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR"
+    /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress"
+    mkdir -p "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress"
+    if [ "$BITCOIN_PORTABLE_ARCHIVE_EXTENSION" == ".tar.gz" ]
     then
-        tar --strip-components=1 -zxf "$at/$archive" -C "$at/$dir.in-progress"
-        mv "$at/$dir.in-progress" "$at/$dir"
+        tar --strip-components=1 -zxf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE" -C "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress"
+        mv "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress" "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR"
     else
-        unzip -d "$at/$dir.in-progress" "$at/$archive"
-        mv "$at/$dir.in-progress/bitcoin-$BITCOIN_CORE_VERSION" "$at/$dir"
-        /bin/rm -rf "$at/$dir.in-progress"
+        unzip -d "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress" "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE"
+        mv "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress/bitcoin-$BITCOIN_PORTABLE_VERSION" "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR"
+        /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress"
     fi
-    echo "$at/$dir extracted."
+    echo "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR extracted."
 fi
 
-(cd "$at" && mkdir -p data)
+mkdir -p "$BITCOIN_PORTABLE_DIR/data"
 

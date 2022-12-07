@@ -1,27 +1,4 @@
 #!/bin/bash
-at="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-
-. "$at/config.sh"
-if [ ! -x "$BITCOIN_CORE_EXECUTABLE" ]
-then
-    "$at/setup"
-fi
-
-WINPATH() {
-    if which cygpath > /dev/null # git-bash/msys/cygwin
-    then
-       cygpath -w "$@"
-    elif [ -r /proc/version ] && grep -q Microsoft /proc/version
-    then
-	    echo readlink -m "$@" | sed 's|^/mnt/\([a-z]\)|\U\1:|' | sed 's|/|\\|g'
-    else
-	    echo "$@"
-    fi
-}
-
-if which renice > /dev/null
-then
-    renice -n 10 $$
-fi
-
-exec "$BITCOIN_CORE_EXECUTABLE" -datadir="$(WINPATH "$at/data")" "$@"
+. "$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/config.sh"
+"$BITCOIN_PORTABLE_DIR/setup"
+BITCOIN_PORTABLE_NICE_EXEC bitcoin-qt -datadir="$(BITCOIN_PORTABLE_GET_PATH "$BITCOIN_PORTABLE_DIR/data")" "$@"
