@@ -21,7 +21,7 @@ done
 
 tries=0
 while ! (test -r "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE" && \
-    cd "$BITCOIN_PORTABLE_DIR" && shasum -a 256 -c "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256" > /dev/null)
+    cd "$BITCOIN_PORTABLE_DIR" && sha256sum -c "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256" > /dev/null)
 do
     tries=$(($tries + 1))
     [ $tries -lt 2 ] || BITCOIN_PORTABLE_ERR "failed to download $BITCOIN_PORTABLE_ARCHIVE"
