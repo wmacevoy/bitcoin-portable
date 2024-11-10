@@ -1,6 +1,5 @@
 name: Cross-Platform Test
 
-# Define events that will trigger this workflow
 on:
   push:
     branches:
@@ -18,34 +17,40 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         arch: [x64, arm64]
+        shell: [bash]
         include:
           - os: windows-latest
-            shell: bash  # Enables Git Bash for Windows
+            arch: x64
+            shell: bash
+          - os: windows-latest
+            arch: arm64
+            shell: bash
           - os: ubuntu-latest
+            arch: x64
+            shell: bash
+          - os: ubuntu-latest
+            arch: arm64
             shell: bash
           - os: macos-latest
+            arch: x64
+            shell: bash
+          - os: macos-latest
+            arch: arm64
             shell: bash
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Set up environment for ARM (if applicable)
-        if: matrix.arch == 'arm64'
+        if: ${{ matrix.arch == 'arm64' }}
         run: |
           # If you have any ARM-specific setup, it can go here
           echo "ARM-specific setup complete."
 
-      - name: Run tests on Linux/WSL/Mac/MinGW
+      - name: Run tests
         env:
           PLATFORM: ${{ matrix.arch }}
         run: |
           chmod +x ./test
           ./test
         shell: ${{ matrix.shell }}
-
-      - name: Run tests on Windows
-        if: runner.os == 'Windows'
-        run: |
-          chmod +x ./test
-          ./test
-        shell: bash
