@@ -6,7 +6,7 @@ src="$BITCOIN_PORTABLE_URL"
 dir="bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS"
 
 tries=0
-while ! grep -q $BITCOIN_PORTABLE_ARCHIVE "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256" > /dev/null
+while [ ! -r "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256" ]
 do
     tries=$(($tries + 1))
     [ $tries -lt 2 ] || BITCOIN_PORTABLE_ERR "failed to find checksum."
@@ -15,7 +15,7 @@ do
     /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
     BITCOIN_PORTABLE_CAT "$BITCOIN_PORTABLE_URL_SHA256" \
         | grep bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS$BITCOIN_PORTABLE_ARCHIVE_EXTENSION \
-        | read checksum _ && echo $checksum \
+        | cut -d ' ' -f1 \
         > "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
 done
 
