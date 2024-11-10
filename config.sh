@@ -82,7 +82,17 @@ BITCOIN_PORTABLE_CAT() {
     BITCOIN_PORTABLE_ERR "CAT $@ failed."
 }
 
-
+BITCOIN_PORTABLE_SHA256() {
+    if command -v openssl >/dev/null 2>&1; then
+        openssl dgst -sha256 -r | cut -d ' ' -f1
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 | cut -d ' ' -f1
+    elif command -v sha256sum >/dev/null 2>&1; then
+        sha256sum | cut -d ' ' -f1
+    else
+        BITCOIN_PORTABLE_ERR "SHA-256 failed."
+    fi
+}
 
 BITCOIN_PORTABLE_VERSION=23.0
 BITCOIN_PORTABLE_OS=$(BITCOIN_PORTABLE_GET_OS)

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+. "$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/config.sh"
+
+tests=()
+
+test_get_os() {
+  local os
+  os="$(BITCOIN_PORTABLE_GET_OS)"
+  if [ "$os" = "unknown" ]
+  then
+  	echo "BITCOIN_PORTABLE_GET_OS returned 'unknown'"
+    exit 1
+  fi
+}
+tests+=("test_get_os")
+
+test_get_path() {
+  local path
+  path="$(BITCOIN_PORTABLE_GET_PATH .)"
+  
+  if [ "$path" = "" ]
+  then
+    echo "BITCOIN_PORTABLE_GET_PATH returned '$path'"
+    exit 1
+  fi
+}
+tests+=("test_get_path")
+
+test_cat() {
+  local url
+  url="$BITCOIN_PORTABLE_URL_SHA256"
+  if ! BITCOIN_PORTABLE_CAT "$url" | grep -q "bitcoin"
+  then
+    echo "BITCOIN_PORTABLE_CAT did not send '$url'."
+    exit 1
+  fi
+}
+tests+=("test_cat")
+
+test_sha256() {
+  local hash
+  local check
+  check=ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
+  hash="$(echo -n a | BITCOIN_PORTABLE_SHA256)"
+  if [ "$hash" != "$check" ]
+  then
+    echo "Hash of 'a' is $hash, not $check"
+    exit 1
+  fi
+}
+tests+=("test_sha256")
+
+# Run each test
+for test in "${tests[@]}"; do
+  echo "Trying $test"
+  $test
+done
