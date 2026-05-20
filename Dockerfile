@@ -35,4 +35,4 @@ RUN ./setup
 VOLUME /data
 EXPOSE 8333
 EXPOSE 18333
-CMD ["/bin/bash","-c",". config.sh ; mkdir -p /app/data && BITCOIN_PORTABLE_NICE_EXEC bitcoind -datadir=/app/data --printtoconsole"]
+CMD ["/bin/bash","-c",". config.sh ; mkdir -p /data && BITCOIN_PORTABLE_NICE_EXEC bitcoind -datadir=/data --printtoconsole"]

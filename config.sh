@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+# Sourced by the wrapper scripts; uses bash features (BASH_SOURCE, local, &>).
 BITCOIN_PORTABLE_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 BITCOIN_PORTABLE_IS_MICROSOFT_WINDOWS() {
-    if which cygpath > /dev/null # git-bash/msys/cygwin
+    if command -v cygpath > /dev/null 2>&1 # git-bash/msys/cygwin
     then
         return 0
     fi
@@ -48,7 +49,7 @@ BITCOIN_PORTABLE_GET_OS() {
 }
 
 BITCOIN_PORTABLE_GET_PATH() {
-    if which cygpath > /dev/null # git-bash/msys/cygwin
+    if command -v cygpath > /dev/null 2>&1 # git-bash/msys/cygwin
     then
         cygpath -w "$@"
     elif [ -r /proc/version ] && grep -q Microsoft /proc/version
@@ -65,14 +66,14 @@ BITCOIN_PORTABLE_ERR() {
 }
 
 BITCOIN_PORTABLE_CAT() {
-    if which curl > /dev/null
+    if command -v curl > /dev/null 2>&1
     then
-    	if curl "$@"
+    	if curl -fsSL "$@"
         then
             return
         fi
     fi
-    if which wget > /dev/null
+    if command -v wget > /dev/null 2>&1
     then
     	if wget -O - "$@"
         then
@@ -94,7 +95,7 @@ BITCOIN_PORTABLE_SHA256() {
     fi
 }
 
-BITCOIN_PORTABLE_VERSION=27.0
+BITCOIN_PORTABLE_VERSION=31.0
 BITCOIN_PORTABLE_OS=$(BITCOIN_PORTABLE_GET_OS)
 if BITCOIN_PORTABLE_IS_MICROSOFT_WINDOWS
 then
@@ -109,13 +110,14 @@ BITCOIN_PORTABLE_SUBDIR="bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS"
 BITCOIN_PORTABLE_ARCHIVE="$BITCOIN_PORTABLE_SUBDIR$BITCOIN_PORTABLE_ARCHIVE_EXTENSION"
 BITCOIN_PORTABLE_URL=https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_PORTABLE_VERSION/bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS$BITCOIN_PORTABLE_ARCHIVE_EXTENSION
 BITCOIN_PORTABLE_URL_SHA256=https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_PORTABLE_VERSION/SHA256SUMS
+BITCOIN_PORTABLE_URL_SHA256_ASC=https://bitcoincore.org/bin/bitcoin-core-$BITCOIN_PORTABLE_VERSION/SHA256SUMS.asc
 
 BITCOIN_PORTABLE_NICE_EXEC() {
     local CMD="$1"
     shift
-    if which renice > /dev/null
+    if command -v renice > /dev/null 2>&1
     then
-        renice -n 10 $$
+        renice -n 10 $$ > /dev/null 2>&1
     fi
     exec "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR/bin/$CMD$BITCOIN_PORTABLE_EXE_EXTENSION" "$@"
 }

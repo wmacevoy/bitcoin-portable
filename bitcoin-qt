@@ -1,4 +1,4 @@
 #!/bin/bash
 . "$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/config.sh"
 "$BITCOIN_PORTABLE_DIR/setup"
-BITCOIN_PORTABLE_NICE_EXEC $(basename "$0") -datadir="$(BITCOIN_PORTABLE_GET_PATH "$BITCOIN_PORTABLE_DIR/data")" "$@"
+BITCOIN_PORTABLE_NICE_EXEC "$(basename "$0")" -datadir="$(BITCOIN_PORTABLE_GET_PATH "$BITCOIN_PORTABLE_DIR/data")" "$@"

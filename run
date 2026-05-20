@@ -1,103 +1,55 @@
 #!/bin/bash
+#
+# Build the bitcoin-portable Docker image and run bitcoind inside it.
+# Block data is persisted in ./data on the host (mounted at /data).
+#
+# Usage:
+#   ./run                 # run bitcoind (default CMD from the Dockerfile)
+#   ./run bash            # open a shell in the container
+#   ./run bitcoin-cli ... # run any command in the container
 
-# get directory of this script
-# https://stackoverflow.com/questions/59895/how-can-i-get-the-source-directory-of-a-bash-script-from-within-the-script-itsel
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 if ! cd "$SCRIPT_DIR"
 then
-    echo "Could not change directory to script directory '$SCRIPT_DIR'"
+    echo "Could not change directory to '$SCRIPT_DIR'" 1>&2
     exit 1
 fi
-echo "Working directory is $SCRIPT_DIR"
-
-windows() {
-    if which cygpath > /dev/null # git-bash/msys/cygwin
-    then
-	return 0
-    fi
-    if [ -r /proc/version ] && grep -q Microsoft /proc/version
-    then
-	return 0
-    fi
-    return 1
-}
-
-winenv() {
-    if windows
-    then
-	winpty "$@"
-    else
-	"$@"
-    fi
-}
-
-# Try to convert for big-bash/msys/cygwin/wsl...
-winpath() {
-    if which cygpath > /dev/null # git-bash/msys/cygwin
-    then
-       cygpath -w "$@"
-    elif [ -r /proc/version ] && grep -q Microsoft /proc/version
-    then
-	echo readlink -m "$@" | sed 's|^/mnt/\([a-z]\)|\U\1:|' | sed 's|/|\\|g'
-    else
-	echo "$@"
-    fi
-}
-
-# use the directory name as the tag name for docker
-DOCKER_TAG=$(basename "$SCRIPT_DIR")
-
-# Host (source) directory to mount in container
-HOST_DIR="$(winpath "$SCRIPT_DIR")"
-
-# Guest (target) directory where directoy is mounted
-GUEST_DIR=/app
 
 if [ ! -f Dockerfile ]
 then
-    echo "'$SCRIPT_DIR' does not contain a Dockerfile."
+    echo "'$SCRIPT_DIR' does not contain a Dockerfile." 1>&2
     exit 1
 fi
 
-
-echo "docker build '$SCRIPT_DIR/Dockerfile' with tag '$DOCKER_TAG'..."
-if docker build -t "$DOCKER_TAG" .
+if ! command -v docker > /dev/null 2>&1
 then
-    echo "docker build ok."
-else
-    echo "docker build failed."
+    echo "docker is not installed or not on PATH." 1>&2
     exit 1
 fi
-if [ ! -f "$SCRIPT_DIR/Gemfile" ]
+
+DOCKER_TAG=$(basename "$SCRIPT_DIR")
+
+echo "building image '$DOCKER_TAG'..."
+if ! docker build -t "$DOCKER_TAG" .
 then
-    echo "Creating default Gemfile"
-    winenv docker run -it --rm \
-	   -v "$HOST_DIR:$GUEST_DIR" \
-	   "$DOCKER_TAG" \
-	   bundle init
+    echo "docker build failed." 1>&2
+    exit 1
 fi
 
-if [ -f "$SCRIPT_DIR/Gemfile" -a ! -f "$SCRIPT_DIR/Gemfile.lock" ]
-then
-    echo "first time running bundle install for Gemfile"
-    winenv docker run -it --rm \
-	   -v "$HOST_DIR:$GUEST_DIR" \
-	   "$DOCKER_TAG" \
-	   bundle install
-fi
+mkdir -p "$SCRIPT_DIR/data"
 
-echo "docker run '$DOCKER_TAG' (mounting host '$HOST_DIR' as '$GUEST_DIR'): " "$@"
+echo "running '$DOCKER_TAG' (mounting ./data at /data, p2p on 8333)..."
 if [ $# -gt 0 ]
 then
-    winenv docker run -it --rm \
-	   -v "$HOST_DIR:$GUEST_DIR" \
-	   "$DOCKER_TAG" \
-	   "$@"
+    exec docker run -it --rm \
+        -v "$SCRIPT_DIR/data:/data" \
+        -p 8333:8333 \
+        "$DOCKER_TAG" \
+        "$@"
 else
-    echo "Type CTRL-D or exit to exit the interactive shell"
-    winenv docker run -it --rm \
-	   -v "$HOST_DIR:$GUEST_DIR" \
-	   "$DOCKER_TAG" \
-	   bash -i
+    exec docker run -it --rm \
+        -v "$SCRIPT_DIR/data:/data" \
+        -p 8333:8333 \
+        "$DOCKER_TAG"
 fi

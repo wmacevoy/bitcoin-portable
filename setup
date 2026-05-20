@@ -5,16 +5,43 @@
 src="$BITCOIN_PORTABLE_URL"
 dir="bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS"
 
+SHA256SUMS="$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.SHA256SUMS"
+SHA256SUMS_ASC="$SHA256SUMS.asc"
+
 tries=0
 while [ ! -r "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256" ]
 do
     tries=$(($tries + 1))
     [ $tries -lt 2 ] || BITCOIN_PORTABLE_ERR "failed to find checksum."
 
-    echo "downloading $BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
-    /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
-    BITCOIN_PORTABLE_CAT "$BITCOIN_PORTABLE_URL_SHA256" \
-        | grep bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS$BITCOIN_PORTABLE_ARCHIVE_EXTENSION \
+    echo "downloading SHA256SUMS"
+    /bin/rm -rf "$SHA256SUMS" "$SHA256SUMS_ASC" "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
+    BITCOIN_PORTABLE_CAT "$BITCOIN_PORTABLE_URL_SHA256" > "$SHA256SUMS"
+
+    # Best-effort GPG verification of SHA256SUMS against the signed
+    # SHA256SUMS.asc. This proves the checksums come from the Bitcoin Core
+    # builders, not just the same host that served them. Requires gpg and
+    # the builder keys in your keyring:
+    #   git clone https://github.com/bitcoin-core/guix.sigs
+    #   gpg --import guix.sigs/builder-keys/*.gpg
+    # If gpg or the keys are missing we warn but continue (checksum still
+    # guards against corruption).
+    if command -v gpg > /dev/null 2>&1
+    then
+        BITCOIN_PORTABLE_CAT "$BITCOIN_PORTABLE_URL_SHA256_ASC" > "$SHA256SUMS_ASC" 2>/dev/null
+        if gpg --verify "$SHA256SUMS_ASC" "$SHA256SUMS" > /dev/null 2>&1
+        then
+            echo "SHA256SUMS GPG signature verified."
+        else
+            echo "WARNING: could not verify SHA256SUMS GPG signature" 1>&2
+            echo "         (gpg present but no trusted builder key, or .asc missing)." 1>&2
+            echo "         Proceeding with checksum-only verification." 1>&2
+        fi
+    else
+        echo "NOTE: gpg not found; skipping signature verification (checksum only)." 1>&2
+    fi
+
+    grep "bitcoin-$BITCOIN_PORTABLE_VERSION-$BITCOIN_PORTABLE_OS$BITCOIN_PORTABLE_ARCHIVE_EXTENSION\$" "$SHA256SUMS" \
         | cut -d ' ' -f1 \
         > "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_ARCHIVE.sha256"
 done
