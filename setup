@@ -48,6 +48,21 @@ then
         /bin/rm -rf "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR.in-progress"
     fi
     echo "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR extracted."
+
+    # Bitcoin Core's Guix-built macOS .tar.gz binaries carry ad-hoc
+    # "linker-signed" signatures that arm64 macOS rejects as invalid,
+    # killing them with SIGKILL on launch. Re-sign ad-hoc to fix.
+    if [ "`uname`" = "Darwin" ] && command -v codesign > /dev/null
+    then
+        echo "re-signing macOS binaries (ad-hoc)..."
+        for f in "$BITCOIN_PORTABLE_DIR/$BITCOIN_PORTABLE_SUBDIR/bin/"*
+        do
+            if [ -f "$f" ] && file "$f" | grep -q Mach-O
+            then
+                codesign --force --sign - "$f" > /dev/null 2>&1
+            fi
+        done
+    fi
 fi
 
 mkdir -p "$BITCOIN_PORTABLE_DIR/data"
